@@ -131,5 +131,16 @@ namespace ECA.Domain.Machines
             Status = newStatus;
             LastStatusChangedAt = DateTimeOffset.UtcNow;
         }
+
+        public void ReportFault()
+        {
+            if (Status is MachineStatus.Offline)
+            {
+                throw new DomainException(
+                    "Una máquina desconectada no puede reportar un fallo.");
+            }
+
+            ChangeStatus(MachineStatus.Faulted);
+        }
     }
 }

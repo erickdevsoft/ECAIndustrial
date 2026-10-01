@@ -74,4 +74,66 @@ public class MachineTests
             "No se puede iniciar una máquina que está fuera de línea.",
             exception.Message);
     }
+
+    [Fact]
+    public void ReportFault_Should_Change_Status_To_Faulted()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+        machine.Start();
+
+        // Act
+        machine.ReportFault();
+
+        // Assert
+        Assert.Equal(MachineStatus.Faulted, machine.Status);
+    }
+
+    [Fact]
+    public void Reset_Should_Change_Faulted_To_Idle()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+        machine.Start();
+        machine.ReportFault();
+
+        // Act
+        machine.Reset();
+
+        // Assert
+        Assert.Equal(MachineStatus.Idle, machine.Status);
+    }
+
+    [Fact]
+    public void Start_Should_Throw_When_Machine_Is_Faulted()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+        machine.Start();
+        machine.ReportFault();
+
+        // Act
+        var exception = Assert.Throws<DomainException>(
+            () => machine.Start());
+
+        // Assert
+        Assert.Equal(
+            "Una máquina en fallo debe ser reiniciada antes de iniciarla.",
+            exception.Message);
+    }
 }
