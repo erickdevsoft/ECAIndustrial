@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="ECA.Api/ECA.Api.csproj" />
+    <Project Path="ECA.Application/ECA.Application.csproj" />
+    <Project Path="ECA.Domain/ECA.Domain.csproj" />
+    <Project Path="ECA.Hmi/ECA.Hmi.csproj" />
+    <Project Path="ECA.Infrastructure/ECA.Infrastructure.csproj" />
+    <Project Path="ECA.Simulator/ECA.Simulator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="ECA.ArchitectureTests/ECA.ArchitectureTests.csproj" />
+    <Project Path="ECA.IntegrationTests/ECA.IntegrationTests.csproj" />
+    <Project Path="ECA.UnitTests/ECA.UnitTests.csproj" />
+  </Folder>
+</Solution>

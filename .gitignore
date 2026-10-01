@@ -1,0 +1,59 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Test results
+TestResults/
+*.trx
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml
+
+# Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!*.env.example
+
+# Local configuration
+appsettings.Local.json
+appsettings.Development.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Publish
+publish/
+wwwroot/dist/
+
+# Node
+node_modules/
+
+# Angular
+.angular/
