@@ -49,7 +49,7 @@ public class MachineTests
 
         // Verificamos que los datos proporcionados durante
         // la creación se hayan almacenado correctamente.
-        Assert.Equal("CNC-01", machine.Code);
+        Assert.Equal("CNC-01", machine.Code.Value);
         Assert.Equal("Main CNC", machine.Name);
         Assert.Equal(MachineType.Cnc, machine.Type);
 
@@ -362,11 +362,12 @@ public class MachineTests
     }
 
     /// <summary>
-    /// Comprueba que cuando una máquina cambia de estado,
-    /// genera un Domain Event describiendo dicho cambio.
+    /// Comprueba que Start() genera un Domain Event con
+    /// la información correcta sobre el cambio de estado.
     ///
-    /// Esto permite que otras partes de la aplicación sepan
-    /// qué ocurrió sin acoplar la entidad Machine a servicios externos.
+    /// La operación Start() no solamente modifica el estado
+    /// interno de Machine; también registra el hecho de que
+    /// ese cambio ha ocurrido.
     /// </summary>
     [Fact]
     public void Start_Should_Create_Status_Changed_Domain_Event()
@@ -379,17 +380,16 @@ public class MachineTests
             "Main CNC",
             MachineType.Cnc);
 
+        // Una máquina nueva empieza Offline.
+        // Necesitamos llevarla a Idle antes de poder iniciarla.
         machine.BringOnline();
 
-        // Limpiamos los eventos generados durante BringOnline().
+        // BringOnline() también genera un evento.
         //
-        // En una aplicación real, el consumidor de eventos será
-        // responsable de procesarlos y posteriormente marcarlos
-        // como procesados.
-        //
-        // Para este test queremos comprobar únicamente el evento
-        // generado por Start().
-        machine.ClearDomainEvents();
+        // Para este test queremos analizar únicamente el evento
+        // generado por Start(), por lo que consumimos primero
+        // los eventos pendientes.
+        machine.GetDomainEvents();
 
         // ============================================================
         // ACT
@@ -399,30 +399,209 @@ public class MachineTests
         // ============================================================
         // ASSERT
         // ============================================================
-        // Después de Start() debe existir exactamente un evento.
-        Assert.Single(machine.DomainEvents);
+        // Start() debe haber generado exactamente un evento.
+        var domainEvents = machine.GetDomainEvents();
 
-        // Recuperamos el evento generado.
+        Assert.Single(domainEvents);
+
+        // Comprobamos que el evento sea del tipo esperado.
         var domainEvent = Assert.IsType<MachineStatusChangedDomainEvent>(
-            machine.DomainEvents.Single());
+            domainEvents.Single());
 
-        // Comprobamos que el evento identifica correctamente
-        // la máquina que ha cambiado.
+        // El evento debe identificar correctamente la máquina.
         Assert.Equal(machine.Id, domainEvent.MachineId);
 
-        // El estado anterior debe ser Idle.
+        // Start() se ejecutó cuando la máquina estaba Idle.
         Assert.Equal(
             MachineStatus.Idle,
             domainEvent.PreviousStatus);
 
-        // El nuevo estado debe ser Running.
+        // Después de Start(), la máquina está Running.
         Assert.Equal(
             MachineStatus.Running,
             domainEvent.NewStatus);
 
-        // El evento debe tener una fecha válida.
+        // El evento debe tener registrada la fecha en la que ocurrió.
         Assert.NotEqual(
             default,
             domainEvent.OccurredOn);
+    }
+
+
+    /// <summary>
+    /// Comprueba que GetDomainEvents() devuelve los eventos pendientes
+    /// y posteriormente los elimina del agregado.
+    ///
+    /// De esta forma cada evento puede ser procesado una única vez
+    /// por el mecanismo que utilicemos posteriormente.
+    /// </summary>
+    [Fact]
+    public void GetDomainEvents_Should_Return_And_Clear_Pending_Events()
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+
+        // ACT
+        var domainEvents = machine.GetDomainEvents();
+
+        // ASSERT
+        // BringOnline() genera un evento.
+        Assert.Single(domainEvents);
+
+        // Al haberlos obtenido, ya no deberían quedar eventos pendientes.
+        var remainingEvents = machine.GetDomainEvents();
+
+        Assert.Empty(remainingEvents);
+    }
+
+
+    /// <summary>
+    /// Comprueba que una máquina detenida puede volver a iniciarse.
+    ///
+    /// La transición permitida es:
+    ///
+    /// Stopped -> Running
+    ///
+    /// Este comportamiento permite detener una máquina y posteriormente
+    /// volver a ponerla en producción sin tener que pasar nuevamente
+    /// por el estado Offline.
+    /// </summary>
+    [Fact]
+    public void Start_Should_Change_Stopped_To_Running()
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+        machine.Start();
+        machine.Stop();
+
+        // ACT
+        machine.Start();
+
+        // ASSERT
+        Assert.Equal(
+            MachineStatus.Running,
+            machine.Status);
+    }
+
+
+    /// <summary>
+    /// Comprueba que una máquina Offline no puede registrar
+    /// un fallo operativo.
+    ///
+    /// Una máquina desconectada no está disponible para reportar
+    /// un estado operativo dentro de nuestro modelo.
+    /// </summary>
+    [Fact]
+    public void ReportFault_Should_Throw_When_Machine_Is_Offline()
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        // ACT
+        var exception = Assert.Throws<DomainException>(
+            () => machine.ReportFault());
+
+        // ASSERT
+        Assert.Equal(
+            "Una máquina desconectada no puede reportar un fallo.",
+            exception.Message);
+    }
+
+    /// <summary>
+    /// Comprueba que Reset() solamente puede utilizarse cuando
+    /// la máquina se encuentra en estado Faulted.
+    ///
+    /// Todos los demás estados deben rechazar la operación.
+    /// </summary>
+    [Theory]
+    [InlineData(MachineStatus.Offline)]
+    [InlineData(MachineStatus.Idle)]
+    [InlineData(MachineStatus.Running)]
+    [InlineData(MachineStatus.Stopped)]
+    [InlineData(MachineStatus.Maintenance)]
+    public void Reset_Should_Throw_When_Machine_Is_Not_Faulted(
+        MachineStatus status)
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        // Llevamos la máquina al estado que queremos comprobar.
+        SetMachineStatus(machine, status);
+
+        // ACT
+        var exception = Assert.Throws<DomainException>(
+            () => machine.Reset());
+
+        // ASSERT
+        Assert.Equal(
+            "Solo una máquina con un fallo puede reiniciarse.",
+            exception.Message);
+    }
+
+
+    /// <summary>
+    /// Lleva una máquina a un estado concreto para preparar
+    /// diferentes escenarios de prueba.
+    ///
+    /// Este método solamente existe para facilitar la preparación
+    /// de los tests y no forma parte de la lógica de producción.
+    /// </summary>
+    private static void SetMachineStatus(
+        Machine machine,
+        MachineStatus status)
+    {
+        switch (status)
+        {
+            case MachineStatus.Offline:
+                break;
+
+            case MachineStatus.Idle:
+                machine.BringOnline();
+                break;
+
+            case MachineStatus.Running:
+                machine.BringOnline();
+                machine.Start();
+                break;
+
+            case MachineStatus.Stopped:
+                machine.BringOnline();
+                machine.Start();
+                machine.Stop();
+                break;
+
+            case MachineStatus.Maintenance:
+                machine.BringOnline();
+                machine.SetMaintenance();
+                break;
+
+            case MachineStatus.Faulted:
+                machine.BringOnline();
+                machine.Start();
+                machine.ReportFault();
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(status),
+                    status,
+                    "Estado de máquina no contemplado.");
+        }
     }
 }
