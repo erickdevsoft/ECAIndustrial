@@ -1,6 +1,7 @@
 using ECA.Domain.Common;
 using ECA.Domain.Common.Events;
 using ECA.Domain.Machines.Events;
+using ECA.Domain.Machines.Alarms;
 
 namespace ECA.Domain.Machines;
 
@@ -21,6 +22,9 @@ public sealed class Machine
     /// puedan añadir eventos arbitrariamente.
     /// </summary>
     private readonly List<IDomainEvent> _domainEvents = [];
+
+    private readonly List<MachineAlarm> _alarms = [];
+
 
     /// <summary>
     /// Constructor privado para controlar cómo se crea una máquina.
@@ -331,5 +335,52 @@ public sealed class Machine
         }
 
         ChangeStatus(MachineStatus.Idle);
+    }
+
+
+    public IReadOnlyCollection<MachineAlarm> Alarms
+        => _alarms.AsReadOnly();
+
+
+    /// <summary>
+    /// Registra una nueva alarma en la máquina.
+    ///
+    /// Machine controla la colección de alarmas porque actúa como
+    /// Aggregate Root del agregado.
+    /// </summary>
+    public MachineAlarm RaiseAlarm(
+        string code,
+        string message,
+        AlarmSeverity severity)
+    {
+        var alarm = MachineAlarm.Create(
+            code,
+            message,
+            severity);
+
+        _alarms.Add(alarm);
+
+        return alarm;
+    }
+
+
+    /// <summary>
+    /// Limpia una alarma activa de la máquina.
+    ///
+    /// La alarma debe pertenecer a esta Machine. El Aggregate Root
+    /// es quien decide si la operación puede realizarse.
+    /// </summary>
+    public void ClearAlarm(MachineAlarmId alarmId)
+    {
+        var alarm = _alarms.FirstOrDefault(
+            alarm => alarm.Id == alarmId);
+
+        if (alarm is null)
+        {
+            throw new DomainException(
+                "La alarma no pertenece a la máquina.");
+        }
+
+        alarm.Clear();
     }
 }

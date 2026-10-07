@@ -743,4 +743,7 @@ public class MachineTests
             "Solo una máquina en mantenimiento puede finalizar el mantenimiento.",
             exception.Message);
     }
+
+
+
 }
