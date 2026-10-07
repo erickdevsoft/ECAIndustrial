@@ -172,16 +172,20 @@ public sealed class Machine
     }
 
     /// <summary>
-    /// Detiene la máquina.
+    /// Detiene una máquina que está en funcionamiento.
+    ///
+    /// La única transición válida es:
     ///
     /// Running -> Stopped
+    ///
+    /// El método representa una parada controlada de la máquina.
     /// </summary>
     public void Stop()
     {
-        if (Status is MachineStatus.Offline)
+        if (Status is not MachineStatus.Running)
         {
             throw new DomainException(
-                "Una máquina desconectada no puede detenerse.");
+                "Solo una máquina en funcionamiento puede detenerse.");
         }
 
         ChangeStatus(MachineStatus.Stopped);
@@ -190,8 +194,13 @@ public sealed class Machine
     /// <summary>
     /// Envía la máquina a mantenimiento.
     ///
-    /// Una máquina que está ejecutándose no puede entrar
-    /// directamente en mantenimiento.
+    /// Las transiciones válidas son:
+    ///
+    /// Idle -> Maintenance
+    /// Stopped -> Maintenance
+    ///
+    /// Una máquina en funcionamiento debe detenerse antes de entrar
+    /// en mantenimiento.
     /// </summary>
     public void SetMaintenance()
     {
@@ -199,6 +208,24 @@ public sealed class Machine
         {
             throw new DomainException(
                 "Una máquina en funcionamiento no puede entrar en mantenimiento.");
+        }
+
+        if (Status is MachineStatus.Offline)
+        {
+            throw new DomainException(
+                "Una máquina desconectada no puede entrar en mantenimiento.");
+        }
+
+        if (Status is MachineStatus.Maintenance)
+        {
+            throw new DomainException(
+                "La máquina ya está en mantenimiento.");
+        }
+
+        if (Status is MachineStatus.Faulted)
+        {
+            throw new DomainException(
+                "Una máquina con un fallo debe reiniciarse antes de entrar en mantenimiento.");
         }
 
         ChangeStatus(MachineStatus.Maintenance);
@@ -220,8 +247,12 @@ public sealed class Machine
         ChangeStatus(MachineStatus.Idle);
     }
 
+
     /// <summary>
     /// Registra un fallo en la máquina.
+    ///
+    /// Una máquina disponible, detenida o en mantenimiento puede
+    /// pasar a Faulted cuando se detecta una condición de error.
     /// </summary>
     public void ReportFault()
     {
@@ -229,6 +260,12 @@ public sealed class Machine
         {
             throw new DomainException(
                 "Una máquina desconectada no puede reportar un fallo.");
+        }
+
+        if (Status is MachineStatus.Faulted)
+        {
+            throw new DomainException(
+                "La máquina ya se encuentra en estado de fallo.");
         }
 
         ChangeStatus(MachineStatus.Faulted);
@@ -271,5 +308,28 @@ public sealed class Machine
                 previousStatus,
                 newStatus,
                 occurredOn));
+    }
+
+
+    /// <summary>
+    /// Finaliza el mantenimiento de la máquina.
+    ///
+    /// La transición permitida es:
+    ///
+    /// Maintenance -> Idle
+    ///
+    /// La máquina vuelve a estar disponible, pero todavía no está
+    /// ejecutando producción. Será necesario llamar posteriormente
+    /// a Start() para pasar a Running.
+    /// </summary>
+    public void CompleteMaintenance()
+    {
+        if (Status is not MachineStatus.Maintenance)
+        {
+            throw new DomainException(
+                "Solo una máquina en mantenimiento puede finalizar el mantenimiento.");
+        }
+
+        ChangeStatus(MachineStatus.Idle);
     }
 }

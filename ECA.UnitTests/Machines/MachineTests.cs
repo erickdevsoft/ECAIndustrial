@@ -604,4 +604,143 @@ public class MachineTests
                     "Estado de máquina no contemplado.");
         }
     }
+
+
+    /// <summary>
+    /// Comprueba que una máquina en mantenimiento puede finalizar
+    /// correctamente el mantenimiento.
+    ///
+    /// La transición esperada es:
+    ///
+    /// Maintenance -> Idle
+    ///
+    /// Después de completar el mantenimiento, la máquina queda
+    /// disponible pero todavía no está en funcionamiento.
+    /// </summary>
+    [Fact]
+    public void CompleteMaintenance_Should_Change_Maintenance_To_Idle()
+    {
+        // ============================================================
+        // ARRANGE
+        // ============================================================
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+        machine.SetMaintenance();
+
+        // Consumimos el evento generado por SetMaintenance().
+        machine.GetDomainEvents();
+
+        // ============================================================
+        // ACT
+        // ============================================================
+        machine.CompleteMaintenance();
+
+        // ============================================================
+        // ASSERT
+        // ============================================================
+        Assert.Equal(
+            MachineStatus.Idle,
+            machine.Status);
+    }
+
+
+    /// <summary>
+    /// Comprueba que Stop() solamente puede ejecutarse
+    /// cuando la máquina está en Running.
+    ///
+    /// El mismo comportamiento inválido se comprueba para
+    /// los diferentes estados en los que la parada no tiene sentido.
+    /// </summary>
+    [Theory]
+    [InlineData(MachineStatus.Offline)]
+    [InlineData(MachineStatus.Idle)]
+    [InlineData(MachineStatus.Stopped)]
+    [InlineData(MachineStatus.Maintenance)]
+    [InlineData(MachineStatus.Faulted)]
+    public void Stop_Should_Throw_When_Machine_Is_Not_Running(
+        MachineStatus status)
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        SetMachineStatus(machine, status);
+
+        // ACT
+        var exception = Assert.Throws<DomainException>(
+            () => machine.Stop());
+
+        // ASSERT
+        Assert.Equal(
+            "Solo una máquina en funcionamiento puede detenerse.",
+            exception.Message);
+    }
+
+
+    /// <summary>
+    /// Comprueba que una máquina con un fallo no puede entrar
+    /// directamente en mantenimiento.
+    ///
+    /// Primero debe recuperarse mediante Reset().
+    /// </summary>
+    [Fact]
+    public void SetMaintenance_Should_Throw_When_Machine_Is_Faulted()
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        machine.BringOnline();
+        machine.Start();
+        machine.ReportFault();
+
+        // ACT
+        var exception = Assert.Throws<DomainException>(
+            () => machine.SetMaintenance());
+
+        // ASSERT
+        Assert.Equal(
+            "Una máquina con un fallo debe reiniciarse antes de entrar en mantenimiento.",
+            exception.Message);
+    }
+
+
+    /// <summary>
+    /// Comprueba que CompleteMaintenance() solamente puede ejecutarse
+    /// cuando la máquina está realmente en mantenimiento.
+    /// </summary>
+    [Theory]
+    [InlineData(MachineStatus.Offline)]
+    [InlineData(MachineStatus.Idle)]
+    [InlineData(MachineStatus.Running)]
+    [InlineData(MachineStatus.Stopped)]
+    [InlineData(MachineStatus.Faulted)]
+    public void CompleteMaintenance_Should_Throw_When_Machine_Is_Not_In_Maintenance(
+        MachineStatus status)
+    {
+        // ARRANGE
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        SetMachineStatus(machine, status);
+
+        // ACT
+        var exception = Assert.Throws<DomainException>(
+            () => machine.CompleteMaintenance());
+
+        // ASSERT
+        Assert.Equal(
+            "Solo una máquina en mantenimiento puede finalizar el mantenimiento.",
+            exception.Message);
+    }
 }
