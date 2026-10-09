@@ -7,16 +7,26 @@ namespace ECA.UnitTests.Machines
         [Fact]
         public void Create_Should_Create_Valid_Machine_Alarm()
         {
-            //arrange
-            const string Code = "TEMP-001";
-            const string Message = "Temperatura del husillo demasiado alta";
-            const AlarmSeverity Severity = AlarmSeverity.Critical;
+            // Arrange
+            // Definimos los datos con los que crearemos la alarma.
+            const string code = "TEMP-001";
+            const string message = "Temperatura del husillo demasiado alta";
+            const AlarmSeverity severity = AlarmSeverity.Critical;
 
-            //act
-            var alarm = MachineAlarm.Create(Code, Message, Severity);
+            // Act
+            var alarm = MachineAlarm.Create(code, message, severity);
 
-            //assert
-            Assert.NotNull(alarm);
+            // Assert
+            // Comprobamos que se ha generado una identidad válida.
+            Assert.NotEqual(default, alarm.Id);
+
+            // Verificamos que los datos proporcionados se conservan.
+            Assert.Equal(code, alarm.Code);
+            Assert.Equal(message, alarm.Message);
+            Assert.Equal(severity, alarm.Severity);
+
+            // Una alarma nueva debe comenzar activa.
+            Assert.True(alarm.IsActive);
         }
     }
 }

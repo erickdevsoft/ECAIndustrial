@@ -378,7 +378,7 @@ public sealed class Machine
         if (alarm is null)
         {
             throw new DomainException(
-                "La alarma no pertenece a la máquina.");
+                "La alarma no pertenece a esta máquina.");
         }
 
         alarm.Clear();

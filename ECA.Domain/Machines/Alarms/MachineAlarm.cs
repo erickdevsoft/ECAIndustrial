@@ -90,10 +90,10 @@ public sealed class MachineAlarm
     /// <summary>
     /// Desactiva la alarma.
     ///
-    /// La operación se mantiene dentro de la Entity para evitar
-    /// que código externo pueda modificar IsActive directamente.
+    /// Este método solo puede utilizarse desde el ensamblado del dominio.
+    /// La modificación pública debe realizarse a través de Machine.
     /// </summary>
-    public void Clear()
+    internal void Clear()
     {
         IsActive = false;
     }

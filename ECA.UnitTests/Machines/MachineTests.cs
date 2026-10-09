@@ -1,5 +1,6 @@
 using ECA.Domain.Common;
 using ECA.Domain.Machines;
+using ECA.Domain.Machines.Alarms;
 using ECA.Domain.Machines.Events;
 
 namespace ECA.UnitTests.Machines;
@@ -745,5 +746,103 @@ public class MachineTests
     }
 
 
+    /// <summary>
+    /// Comprueba que al registrar una alarma, esta queda asociada
+    /// a la máquina con los datos proporcionados y permanece activa.
+    /// </summary>
+    [Fact]
+    public void RaiseAlarm_Should_Add_Alarm_To_Machine()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        const string code = "TEMP-001";
+        const string message = "Temperatura del husillo demasiado alta";
+        const AlarmSeverity severity = AlarmSeverity.Critical;
+
+        // Act
+        var alarm = machine.RaiseAlarm(code, message, severity);
+
+        // Assert
+        Assert.Contains(alarm, machine.Alarms);
+        Assert.NotEqual(default, alarm.Id);
+        Assert.Equal(code, alarm.Code);
+        Assert.Equal(message, alarm.Message);
+        Assert.Equal(severity, alarm.Severity);
+        Assert.True(alarm.IsActive);
+    }
+
+
+    /// <summary>
+    /// Comprueba que una máquina no puede limpiar una alarma
+    /// que pertenece a otra máquina.
+    /// </summary>
+    [Fact]
+    public void ClearAlarm_Should_Throw_When_Alarm_Belongs_To_Another_Machine()
+    {
+        // Arrange
+        // Creamos dos máquinas independientes.
+        var machine1 = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        var machine2 = Machine.Create(
+            "CNC-02",
+            "Secondary CNC",
+            MachineType.Cnc);
+
+        // La alarma pertenece exclusivamente a machine1.
+        var alarm = machine1.RaiseAlarm(
+            "TEMP-001",
+            "Temperatura del husillo demasiado alta",
+            AlarmSeverity.Critical);
+
+        // Act
+        // Intentamos limpiar desde machine2 una alarma que no le pertenece.
+        var exception = Assert.Throws<DomainException>(
+            () => machine2.ClearAlarm(alarm.Id));
+
+        // Assert
+        // Machine debe rechazar la operación porque la alarma no pertenece
+        // al agregado de la máquina que está intentando modificarla.
+        Assert.Equal(
+            "La alarma no pertenece a esta máquina.",
+            exception.Message);
+    }
+
+
+    /// <summary>
+    /// Comprueba que una máquina puede limpiar una de sus propias
+    /// alarmas y que esta pasa de activa a inactiva.
+    /// </summary>
+    [Fact]
+    public void ClearAlarm_Should_Deactivate_Alarm_When_It_Belongs_To_Machine()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        var alarm = machine.RaiseAlarm(
+            "TEMP-001",
+            "Temperatura del husillo demasiado alta",
+            AlarmSeverity.Critical);
+
+        // Comprobamos la condición inicial antes de ejecutar la operación.
+        Assert.True(alarm.IsActive);
+
+        // Act
+        // Solicitamos a Machine que limpie una alarma de su propiedad.
+        machine.ClearAlarm(alarm.Id);
+
+        // Assert
+        // La alarma debe haber pasado de activa a inactiva.
+        Assert.False(alarm.IsActive);
+    }
 
 }
