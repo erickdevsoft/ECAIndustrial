@@ -360,6 +360,15 @@ public sealed class Machine
 
         _alarms.Add(alarm);
 
+        _domainEvents.Add(
+            new MachineAlarmRaisedDomainEvent(
+                Id,
+                alarm.Id,
+                alarm.Code,
+                alarm.Message,
+                alarm.Severity,
+                alarm.RaisedAt));
+
         return alarm;
     }
 
@@ -379,8 +388,17 @@ public sealed class Machine
         {
             throw new DomainException(
                 "La alarma no pertenece a esta máquina.");
-        }
+        }        
 
         alarm.Clear();
+
+        _domainEvents.Add(
+            new MachineAlarmClearedDomainEvent(
+                Id,
+                alarm.Id,
+                alarm.Code,
+                alarm.Message,
+                alarm.Severity,
+                DateTimeOffset.UtcNow));
     }
 }

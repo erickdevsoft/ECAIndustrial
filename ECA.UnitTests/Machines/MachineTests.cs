@@ -845,4 +845,46 @@ public class MachineTests
         Assert.False(alarm.IsActive);
     }
 
+    /// <summary>
+    /// Comprueba que generar una alarma registra un Domain Event
+    /// con la identidad de la máquina, los datos de la alarma
+    /// y el instante en que se produjo.
+    /// </summary>
+    [Fact]
+    public void RaiseAlarm_Should_Create_Alarm_Raised_Domain_Event()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        const string code = "TEMP-001";
+        const string message = "Temperatura del husillo demasiado alta";
+        const AlarmSeverity severity = AlarmSeverity.Critical;
+
+        // Act
+        var alarm = machine.RaiseAlarm(code, message, severity);
+
+        // Assert
+        // Comprobamos que se ha registrado exactamente un evento.
+        var pendingEvents = machine.GetDomainEvents();
+
+        var domainEvent = Assert.IsType<MachineAlarmRaisedDomainEvent>(
+            Assert.Single(pendingEvents));
+
+        // Verificamos que el evento identifica correctamente la máquina
+        // y la alarma que se acaba de generar.
+        Assert.Equal(machine.Id, domainEvent.MachineId);
+        Assert.Equal(alarm.Id, domainEvent.AlarmId);
+
+        // Los datos del evento deben coincidir con los de la alarma.
+        Assert.Equal(code, domainEvent.Code);
+        Assert.Equal(message, domainEvent.Message);
+        Assert.Equal(severity, domainEvent.Severity);
+
+        // El evento y la alarma representan el mismo instante de creación.
+        Assert.Equal(alarm.RaisedAt, domainEvent.OccurredOn);
+    }
+
 }
