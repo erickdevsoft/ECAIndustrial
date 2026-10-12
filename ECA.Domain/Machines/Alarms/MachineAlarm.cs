@@ -80,6 +80,17 @@ public sealed class MachineAlarm
                 nameof(message));
         }
 
+        // Comprobamos que la gravedad corresponde a un valor
+        // declarado en AlarmSeverity.
+        // Un enum puede contener valores numéricos no definidos.
+        if (!Enum.IsDefined(severity))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(severity),
+                severity,
+                "La gravedad de la alarma no es válida.");
+        }
+
         return new MachineAlarm(
             MachineAlarmId.New(),
             code.Trim(),

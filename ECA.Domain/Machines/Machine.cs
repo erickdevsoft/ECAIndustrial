@@ -378,20 +378,35 @@ public sealed class Machine
     ///
     /// La alarma debe pertenecer a esta Machine. El Aggregate Root
     /// es quien decide si la operación puede realizarse.
+    /// Desactiva una alarma de la máquina y registra el evento
+    /// que representa su desactivación.
     /// </summary>
     public void ClearAlarm(MachineAlarmId alarmId)
     {
+        // Buscamos la alarma dentro de este agregado.
         var alarm = _alarms.FirstOrDefault(
             alarm => alarm.Id == alarmId);
 
+        // Impedimos modificar alarmas que no pertenecen a esta máquina.
         if (alarm is null)
         {
             throw new DomainException(
                 "La alarma no pertenece a esta máquina.");
-        }        
+        }
+
+        // Si la alarma ya está desactivada, no necesitamos repetir
+        // la operación ni generar otro evento de dominio.
+        if (!alarm.IsActive)
+        {
+            return;
+        }
 
         alarm.Clear();
 
+        // Registramos el instante en el que se produce la desactivación.
+        var occurredOn = DateTimeOffset.UtcNow;
+
+        // Notificamos al dominio de que la alarma ha sido desactivada.
         _domainEvents.Add(
             new MachineAlarmClearedDomainEvent(
                 Id,
@@ -399,6 +414,6 @@ public sealed class Machine
                 alarm.Code,
                 alarm.Message,
                 alarm.Severity,
-                DateTimeOffset.UtcNow));
+                occurredOn));
     }
 }

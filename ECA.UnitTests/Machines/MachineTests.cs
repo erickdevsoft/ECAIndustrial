@@ -887,4 +887,98 @@ public class MachineTests
         Assert.Equal(alarm.RaisedAt, domainEvent.OccurredOn);
     }
 
+
+    /// <summary>
+    /// Comprueba que al desactivar una alarma se registra un evento
+    /// con los datos correctos y la fecha de desactivación.
+    /// </summary>
+    [Fact]
+    public void ClearAlarm_Should_Create_Alarm_Cleared_Domain_Event()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        const string code = "TEMP-001";
+        const string message = "Temperatura del husillo demasiado alta";
+        const AlarmSeverity severity = AlarmSeverity.Critical;
+
+        var alarm = machine.RaiseAlarm(code, message, severity);
+
+        // Consumimos el evento generado al crear la alarma.
+        // Queremos comprobar únicamente el evento de desactivación.
+        machine.GetDomainEvents();
+
+        // Act
+        // Guardamos los límites temporales para comprobar que la fecha
+        // del evento corresponde a esta operación.
+        var beforeClear = DateTimeOffset.UtcNow;
+
+        machine.ClearAlarm(alarm.Id);
+
+        var afterClear = DateTimeOffset.UtcNow;
+
+        // Assert
+        var pendingEvents = machine.GetDomainEvents();
+
+        var domainEvent = Assert.IsType<MachineAlarmClearedDomainEvent>(
+            Assert.Single(pendingEvents));
+
+        Assert.Equal(machine.Id, domainEvent.MachineId);
+        Assert.Equal(alarm.Id, domainEvent.AlarmId);
+        Assert.Equal(code, domainEvent.Code);
+        Assert.Equal(message, domainEvent.Message);
+        Assert.Equal(severity, domainEvent.Severity);
+
+        // El evento debe haberse producido durante la desactivación.
+        Assert.InRange(
+            domainEvent.OccurredOn,
+            beforeClear,
+            afterClear);
+    }
+
+
+    [Fact]
+    public void ClearAlarm_Should_Not_Create_Duplicate_Event_When_Already_Cleared()
+    {
+        // Arrange
+        var machine = Machine.Create(
+            "CNC-01",
+            "Main CNC",
+            MachineType.Cnc);
+
+        var alarm = machine.RaiseAlarm(
+            "TEMP-001",
+            "Temperatura del husillo demasiado alta",
+            AlarmSeverity.Critical);
+
+        // Consumimos el evento de creación para comprobar
+        // exclusivamente los eventos de desactivación.
+        machine.GetDomainEvents();
+
+        // Act
+        // Primera limpieza: debe generar un evento.
+        machine.ClearAlarm(alarm.Id);
+
+        var firstClearEvents = machine.GetDomainEvents();
+
+        // Segunda limpieza: no debe generar otro evento ni lanzar
+        // una excepción porque la alarma ya está desactivada.
+        machine.ClearAlarm(alarm.Id);
+
+        var pendingEvents = machine.GetDomainEvents();
+
+        // Assert
+        Assert.Single(firstClearEvents);
+        Assert.IsType<MachineAlarmClearedDomainEvent>(
+            firstClearEvents.Single());
+
+        // La segunda llamada no debe dejar eventos pendientes.
+        Assert.Empty(pendingEvents);
+
+        // La alarma permanece desactivada.
+        Assert.False(alarm.IsActive);
+    }
 }

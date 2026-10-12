@@ -28,5 +28,18 @@ namespace ECA.UnitTests.Machines
             // Una alarma nueva debe comenzar activa.
             Assert.True(alarm.IsActive);
         }
+
+
+        [Fact]
+        public void Create_Should_Throw_When_Severity_Is_Invalid()
+        {
+            const string code = "TEMP-002";
+            const string message = "Temperatura del husillo demasiado baja";
+            const AlarmSeverity invalidSeverity = (AlarmSeverity)99; // Valor inválido
+
+            // Act  & Assert
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(
+                () => MachineAlarm.Create(code, message, invalidSeverity));
+        }
     }
 }
