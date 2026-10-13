@@ -21,9 +21,9 @@ public sealed class Machine
     /// Es privada para impedir que otras partes de la aplicación
     /// puedan añadir eventos arbitrariamente.
     /// </summary>
-    private readonly List<IDomainEvent> _domainEvents = [];
+    private readonly List<IDomainEvent> domainEvents = [];
 
-    private readonly List<MachineAlarm> _alarms = [];
+    private readonly List<MachineAlarm> alarms = [];
 
 
     /// <summary>
@@ -275,6 +275,7 @@ public sealed class Machine
         ChangeStatus(MachineStatus.Faulted);
     }
 
+
     /// <summary>
     /// Devuelve los eventos pendientes y limpia la colección interna.
     ///
@@ -283,12 +284,16 @@ public sealed class Machine
     /// </summary>
     public IReadOnlyCollection<IDomainEvent> GetDomainEvents()
     {
-        var domainEvents = _domainEvents.ToArray();
+        // Creamos una copia de los eventos pendientes.
+        var pendingEvents = domainEvents.ToArray();
 
-        _domainEvents.Clear();
+        // Vaciamos la colección interna del agregado.
+        domainEvents.Clear();
 
-        return domainEvents;
+        // Devolvemos la copia, que conserva los eventos recogidos.
+        return pendingEvents;
     }
+
 
     /// <summary>
     /// Cambia el estado y registra el Domain Event correspondiente.
@@ -306,7 +311,7 @@ public sealed class Machine
 
         LastStatusChangedAt = occurredOn;
 
-        _domainEvents.Add(
+        domainEvents.Add(
             new MachineStatusChangedDomainEvent(
                 Id,
                 previousStatus,
@@ -338,8 +343,14 @@ public sealed class Machine
     }
 
 
+    /// <summary>
+    /// Obtiene las alarmas registradas en la máquina.
+    ///
+    /// La colección es de solo lectura para impedir que otras partes
+    /// de la aplicación añadan o eliminen alarmas directamente.
+    /// </summary>
     public IReadOnlyCollection<MachineAlarm> Alarms
-        => _alarms.AsReadOnly();
+        => alarms.AsReadOnly();
 
 
     /// <summary>
@@ -358,9 +369,9 @@ public sealed class Machine
             message,
             severity);
 
-        _alarms.Add(alarm);
+        alarms.Add(alarm);
 
-        _domainEvents.Add(
+        domainEvents.Add(
             new MachineAlarmRaisedDomainEvent(
                 Id,
                 alarm.Id,
@@ -384,7 +395,7 @@ public sealed class Machine
     public void ClearAlarm(MachineAlarmId alarmId)
     {
         // Buscamos la alarma dentro de este agregado.
-        var alarm = _alarms.FirstOrDefault(
+        var alarm = alarms.FirstOrDefault(
             alarm => alarm.Id == alarmId);
 
         // Impedimos modificar alarmas que no pertenecen a esta máquina.
@@ -407,7 +418,7 @@ public sealed class Machine
         var occurredOn = DateTimeOffset.UtcNow;
 
         // Notificamos al dominio de que la alarma ha sido desactivada.
-        _domainEvents.Add(
+        domainEvents.Add(
             new MachineAlarmClearedDomainEvent(
                 Id,
                 alarm.Id,

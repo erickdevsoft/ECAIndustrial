@@ -10,8 +10,15 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Los proyectos de pruebas no necesitan documentar
+       todos sus miembros públicos mediante comentarios XML. -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'ECA.UnitTests' Or '$(MSBuildProjectName)' == 'ECA.IntegrationTests' Or '$(MSBuildProjectName)' == 'ECA.ArchitectureTests'">
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
 </Project>

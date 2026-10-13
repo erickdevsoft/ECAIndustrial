@@ -1,10 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-ECA.Simulator-becd311f-50b8-4443-bf4c-5271a5ecd4ae</UserSecretsId>
+      <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+      <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
