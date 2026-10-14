@@ -35,20 +35,68 @@ Los proyectos están directamente en la raíz del repositorio (no bajo `src/` y 
 - Modelo inicial de `Plant` y `ProductionLine` con referencias por identificador.
 - Tests unitarios asociados; el usuario ha confirmado que pasan en las últimas iteraciones del dominio.
 
-### Application
+## Application
 
 - `IMachineRepository` define `GetByIdAsync` y `SaveAsync`.
-- `ClearMachineAlarmUseCase` recibe `IMachineRepository` por constructor, obtiene la máquina, devuelve `false` si no existe, llama a `ClearAlarm`, guarda y devuelve `true` si existe.
-- Moq añadido como dependencia de `ECA.UnitTests` usando gestión centralizada de versiones NuGet.
-- El test `ExecuteAsync_Should_Return_False_When_Machine_Does_Not_Exist` está implementado y pasa. Comprueba también que `SaveAsync` no se invoca cuando la máquina no existe.
-- La solución fue recompilada correctamente después de corregir comentarios XML y nomenclatura; verificar de nuevo al continuar si se han realizado cambios desde entonces.
+- `ClearMachineAlarmUseCase` recibe `IMachineRepository` por constructor y coordina la desactivación de una alarma.
+- Moq está añadido como dependencia de `ECA.UnitTests` mediante gestión centralizada de versiones NuGet.
+
+### Tests de ClearMachineAlarmUseCase
+
+Se han implementado y el usuario ha confirmado que pasan estos escenarios:
+
+1. `ExecuteAsync_Should_Return_False_When_Machine_Does_Not_Exist`
+   - Devuelve `false` si no existe la máquina.
+   - Comprueba que `SaveAsync` no se invoca.
+
+2. `ExecuteAsync_Should_Return_True_When_Machine_Exists_And_Alarm_Is_Cleared`
+   - Devuelve `true` cuando existe la máquina y se limpia correctamente la alarma.
+   - Comprueba que la alarma queda inactiva.
+   - Comprueba que `SaveAsync` se invoca exactamente una vez con la máquina correspondiente.
+
+3. `ExecuteAsync_Should_Propagate_DomainException_When_Alarm_Does_Not_Belong_To_Machine`
+   - Comprueba que se propaga `DomainException` cuando la alarma no pertenece a la máquina.
+   - Comprueba que `SaveAsync` no se invoca si la operación falla.
 
 ## Punto exacto para retomar
 
-**Sprint 4 — ECA.Application.** El siguiente ejercicio pendiente es crear el test del camino exitoso de `ClearMachineAlarmUseCase`: el repositorio devuelve una máquina, el caso de uso invoca `ClearAlarm` a través de esa máquina, invoca `SaveAsync` con la máquina y devuelve `true`.
+**Sprint 4 — ECA.Application.**
 
-Se trabaja un ejercicio cada vez. No adelantar más tareas hasta revisar la solución del usuario y comprobar los tests.
+El siguiente ejercicio pendiente es crear la estructura inicial de `RaiseMachineAlarmUseCase.cs` en `ECA.Application/Machines/`.
+
+El nuevo caso de uso deberá recibir `IMachineRepository` mediante el constructor y exponer un método asíncrono `ExecuteAsync` que reciba:
+
+- `MachineId machineId`
+- `string code`
+- `string message`
+- `AlarmSeverity severity`
+- `CancellationToken cancellationToken = default`
+
+El tipo de retorno previsto es `Task<MachineAlarmId?>`.
+
+El siguiente paso consiste únicamente en implementar la estructura de la clase y la firma del método, sin añadir todavía su lógica ni sus tests. Revisar la implementación del usuario antes de avanzar.
+
+## Metodología de aprendizaje
+
+Trabajar un solo ejercicio cada vez:
+
+1. Explicar el concepto y el problema que se quiere resolver.
+2. Mostrar ejemplos guiados cuando sean necesarios.
+3. Proponer un único ejercicio.
+4. Esperar la implementación del usuario.
+5. Revisar el código, explicar los errores y comparar alternativas.
+6. Confirmar los tests antes de avanzar.
+
+Utilizar español en las explicaciones, los comentarios educativos y los mensajes funcionales. Mantener los identificadores técnicos en inglés y aplicar Clean Code, evitando comentarios redundantes.
+
+Respetar la configuración actual de los proyectos. No introducir cambios globales de compilación ni dependencias nuevas sin una necesidad justificada.
 
 ## Próxima actualización
 
-Al cerrar la próxima sesión, anotar los archivos modificados, resultado de `dotnet test`/`dotnet build`, commit realizado (si lo hay) y siguiente ejercicio único.
+Al finalizar la siguiente sesión, registrar:
+
+- Archivos creados o modificados.
+- Ejercicio completado y decisiones tomadas.
+- Resultado confirmado de `dotnet test` y `dotnet build`, cuando se ejecuten.
+- Commit realizado, si corresponde.
+- Siguiente ejercicio único pendiente.
