@@ -37,8 +37,6 @@ public sealed class ClearMachineAlarmUseCase
 
         machine.ClearAlarm(alarmId);
 
-        
-
         await machineRepository.SaveAsync(machine, cancellationToken);
 
         return true;
