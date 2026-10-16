@@ -39,6 +39,7 @@ Los proyectos están directamente en la raíz del repositorio (no bajo `src/` y 
 
 - `IMachineRepository` define `GetByIdAsync` y `SaveAsync`.
 - `ClearMachineAlarmUseCase` recibe `IMachineRepository` por constructor y coordina la desactivación de una alarma.
+- `RaiseMachineAlarmUseCase` recibe `IMachineRepository`, recupera la máquina, delega la creación de la alarma al agregado, guarda la máquina y devuelve el ID de la alarma; devuelve `null` si la máquina no existe.
 - Moq está añadido como dependencia de `ECA.UnitTests` mediante gestión centralizada de versiones NuGet.
 
 ### Tests de ClearMachineAlarmUseCase
@@ -62,19 +63,11 @@ Se han implementado y el usuario ha confirmado que pasan estos escenarios:
 
 **Sprint 4 — ECA.Application.**
 
-El siguiente ejercicio pendiente es crear la estructura inicial de `RaiseMachineAlarmUseCase.cs` en `ECA.Application/Machines/`.
+Se añadió `RaiseMachineAlarmUseCaseTests` para el camino exitoso. Comprueba que el caso de uso devuelve el ID de la alarma creada, que la máquina contiene una alarma activa y que `SaveAsync` se invoca una vez con esa máquina.
 
-El nuevo caso de uso deberá recibir `IMachineRepository` mediante el constructor y exponer un método asíncrono `ExecuteAsync` que reciba:
+La implementación del caso de uso está en el commit `9a4c914` (`feat(aplicacion): añadir caso de uso para generar alarmas`). La ejecución más reciente de `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó correctamente: 62 tests, 0 fallidos.
 
-- `MachineId machineId`
-- `string code`
-- `string message`
-- `AlarmSeverity severity`
-- `CancellationToken cancellationToken = default`
-
-El tipo de retorno previsto es `Task<MachineAlarmId?>`.
-
-El siguiente paso consiste únicamente en implementar la estructura de la clase y la firma del método, sin añadir todavía su lógica ni sus tests. Revisar la implementación del usuario antes de avanzar.
+El siguiente ejercicio pendiente es probar el caso en que la máquina no existe: `ExecuteAsync` debe devolver `null` y no debe invocar `SaveAsync`.
 
 ## Metodología de aprendizaje
 
