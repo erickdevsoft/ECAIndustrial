@@ -63,11 +63,11 @@ Se han implementado y el usuario ha confirmado que pasan estos escenarios:
 
 **Sprint 4 — ECA.Application.**
 
-`RaiseMachineAlarmUseCaseTests` cubre el camino exitoso y el caso en que la máquina no existe. El test de máquina inexistente verifica que `ExecuteAsync` devuelve `null`, que consulta el repositorio con el mismo identificador y que no invoca `SaveAsync`.
+`RaiseMachineAlarmUseCaseTests` cubre el camino exitoso, la máquina inexistente, el código vacío, el mensaje vacío, una gravedad no definida y el fallo de `SaveAsync`. Los errores se propagan y la máquina solo se guarda cuando la validación de la alarma ha finalizado correctamente.
 
-La implementación del caso de uso está en el commit `9a4c914` (`feat(aplicacion): añadir caso de uso para generar alarmas`). La ejecución más reciente de `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó correctamente: 63 tests, 0 fallidos.
+La implementación del caso de uso está en el commit `9a4c914` (`feat(aplicacion): añadir caso de uso para generar alarmas`). La ejecución más reciente de `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó correctamente: 67 tests, 0 fallidos.
 
-El siguiente ejercicio pendiente es probar que se propaga `ArgumentException` cuando se intenta generar una alarma con un código vacío, y que `SaveAsync` no se invoca.
+El siguiente ejercicio pendiente es comprobar que el `CancellationToken` recibido por `ExecuteAsync` se transmite a `GetByIdAsync` y `SaveAsync`.
 
 ## Metodología de aprendizaje
 
