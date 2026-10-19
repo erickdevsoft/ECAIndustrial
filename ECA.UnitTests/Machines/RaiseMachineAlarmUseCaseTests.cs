@@ -47,4 +47,37 @@ public class RaiseMachineAlarmUseCaseTests
                 CancellationToken.None),
             Times.Once);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_Should_Return_Null_When_Machine_Does_Not_Exist()
+    {
+        // Arrange: preparamos un repositorio simulado que devuelve null para cualquier ID de máquina.
+
+        var machineId = MachineId.New();
+        var mockRepository = new Mock<IMachineRepository>();
+        mockRepository
+            .Setup(repo => repo.GetByIdAsync(
+                machineId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Machine?)null);
+        var useCase = new RaiseMachineAlarmUseCase(mockRepository.Object);
+        // Act: pedimos al caso de uso que registre una alarma en una máquina inexistente.
+        var result = await useCase.ExecuteAsync(
+            machineId,
+            "ALM001",
+            "Test Alarm",
+            AlarmSeverity.Critical,
+            CancellationToken.None);
+        // Assert: el resultado debe ser null y no se debe intentar guardar ninguna máquina.
+        Assert.Null(result);
+        mockRepository.Verify(
+            repo => repo.GetByIdAsync(machineId, CancellationToken.None),
+            Times.Once);
+
+        mockRepository.Verify(
+            repo => repo.SaveAsync(
+                It.IsAny<Machine>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }
