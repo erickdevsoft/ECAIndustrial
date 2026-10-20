@@ -61,13 +61,17 @@ Se han implementado y el usuario ha confirmado que pasan estos escenarios:
 
 ## Punto exacto para retomar
 
-**Sprint 4 — ECA.Application.**
+**Sprint 5 — ECA.Infrastructure y persistencia.**
 
-`RaiseMachineAlarmUseCaseTests` cubre el camino exitoso, la máquina inexistente, el código vacío, el mensaje vacío, una gravedad no definida y el fallo de `SaveAsync`. Los errores se propagan y la máquina solo se guarda cuando la validación de la alarma ha finalizado correctamente.
+`RaiseMachineAlarmUseCaseTests` cubre el camino exitoso, la máquina inexistente, el código vacío, el mensaje vacío, una gravedad no definida, el fallo de `SaveAsync` y la propagación del `CancellationToken` a `GetByIdAsync` y `SaveAsync`. Los errores se propagan y la máquina solo se guarda cuando la validación de la alarma ha finalizado correctamente.
 
-La implementación del caso de uso está en el commit `9a4c914` (`feat(aplicacion): añadir caso de uso para generar alarmas`). La ejecución más reciente de `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó correctamente: 67 tests, 0 fallidos.
+La implementación del caso de uso está en el commit `9a4c914` (`feat(aplicacion): añadir caso de uso para generar alarmas`). La ejecución más reciente de `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó correctamente: 68 tests, 0 fallidos. El Sprint 4 queda completado a nivel inicial.
 
-El siguiente ejercicio pendiente es comprobar que el `CancellationToken` recibido por `ExecuteAsync` se transmite a `GetByIdAsync` y `SaveAsync`.
+Se completaron la referencia de `Microsoft.EntityFrameworkCore.SqlServer` en `ECA.Infrastructure`, con la versión `10.0.13` gestionada desde `Directory.Packages.props`, y el esqueleto de `EcaDbContext`, cuyo constructor recibe `DbContextOptions<EcaDbContext>` y las pasa a `DbContext`. El contexto expone `DbSet<Machine> Machines`, usando el espacio de nombres `ECA.Domain.Machines`. La compilación actual de `ECA.Infrastructure` terminó sin advertencias ni errores, y `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó con 68 tests correctos. Todavía no hay persistencia efectiva.
+
+En la revisión se observaron referencias directas a `System.Security.Cryptography.Pkcs` en `ECA.Api` y `ECA.Infrastructure`; no se encontraron usos de sus tipos en el código fuente revisado. Conviene aclarar su propósito y revisar si deben mantenerse como dependencias directas.
+
+El siguiente ejercicio único es configurar cómo EF Core convierte `MachineId` a `Guid` para usarlo como clave persistida de `Machine`. Esta conversión es necesaria porque `MachineId` es un Value Object del dominio, no un tipo primitivo que EF Core pueda almacenar directamente por convención.
 
 ## Metodología de aprendizaje
 

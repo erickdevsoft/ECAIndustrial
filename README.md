@@ -2,7 +2,7 @@
 
 **ECA Industrial** es una plataforma industrial ficticia desarrollada como proyecto práctico y portfolio para aprender y demostrar competencias avanzadas en .NET. Su objetivo es modelar una fábrica, simular máquinas y procesos de producción, y evolucionar hacia una solución con API, HMI de escritorio y supervisión web SCADA/MES.
 
-> **Estado:** desarrollo activo. El dominio inicial de máquinas y alarmas está implementado; se está construyendo la capa `ECA.Application` y sus casos de uso.
+> **Estado:** desarrollo activo. El dominio inicial y los casos de uso principales de `ECA.Application` están implementados; ha comenzado el Sprint 5 de persistencia.
 
 ## Objetivos
 
@@ -75,7 +75,7 @@ Principios de diseño:
 | Tecnología | Uso previsto | Estado |
 |---|---|---|
 | ASP.NET Core | API HTTP | Proyecto creado; casos de uso y endpoints pendientes de completar |
-| Entity Framework Core | Persistencia y mapeo | Pendiente |
+| Entity Framework Core | Persistencia y mapeo | Proveedor SQL Server y esqueleto de `EcaDbContext` configurados; mapeos y persistencia pendientes |
 | SQL Server | Base de datos principal | Pendiente |
 | SignalR | Actualizaciones en tiempo real para HMI y web | Pendiente |
 | RabbitMQ | Mensajería entre procesos, si está justificada | Pendiente |
@@ -128,8 +128,8 @@ El plan detallado, los objetivos, criterios de aceptación y estado de cada hito
 | Sprint 1 | Modelo de máquinas y ciclo de vida | Implementado inicialmente |
 | Sprint 2 | Alarmas y Domain Events | Implementado inicialmente; tests existentes |
 | Sprint 3 | Plantas y líneas de producción | Modelo inicial implementado |
-| Sprint 4 | Casos de uso de Application | En curso |
-| Sprint 5 | Persistencia e Infrastructure | Pendiente |
+| Sprint 4 | Casos de uso de Application | Completado a nivel inicial |
+| Sprint 5 | Persistencia e Infrastructure | En curso: proveedor EF Core SQL Server configurado |
 | Sprint 6 | API y seguridad | Pendiente |
 | Sprint 7 | Simulador industrial | Pendiente |
 | Sprint 8 | Tiempo real e integración | Pendiente |
@@ -162,13 +162,13 @@ Las explicaciones, los comentarios educativos y los mensajes funcionales se escr
 - Alarmas de máquina y gravedad.
 - Domain Events para cambio de estado, generación de alarma y desactivación de alarma.
 - Tests del dominio para reglas de estado, alarmas y eventos.
-- `ECA.Application` con el contrato `IMachineRepository` y el caso de uso `ClearMachineAlarmUseCase`.
+- `ECA.Application` con el contrato `IMachineRepository`, `ClearMachineAlarmUseCase` y `RaiseMachineAlarmUseCase`.
 - Moq incorporado a `ECA.UnitTests`.
-- El test del caso en que una máquina no existe devuelve `false` y verifica que no se llama al guardado.
+- Tests de Application para los caminos exitosos, máquina inexistente, validación de alarmas, errores de guardado y propagación del `CancellationToken`.
 
 ### Siguiente paso inmediato
 
-Completar las pruebas de `ClearMachineAlarmUseCase` para el camino exitoso: máquina encontrada, alarma limpiada, `SaveAsync` invocado con la máquina y resultado `true`. Después probar la propagación de errores de dominio y continuar con la implementación real de Infrastructure.
+Configurar cómo EF Core convierte el Value Object `MachineId` a su valor `Guid` para persistirlo como clave de `Machine`.
 
 El estado exacto de cada sesión debe mantenerse en `docs/CONTEXTO_ROADMAP.md`. Si la documentación y el código difieren, el código y sus pruebas son la fuente de verdad del comportamiento implementado.
 

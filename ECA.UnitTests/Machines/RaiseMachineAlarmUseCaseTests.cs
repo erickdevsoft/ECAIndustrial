@@ -225,4 +225,38 @@ public class RaiseMachineAlarmUseCaseTests
                 CancellationToken.None),
             Times.Once);
     }
+
+
+    /// <summary>
+    /// Comprueba que el caso de uso pase el token de cancelación al repositorio.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_Should_Pass_CancellationToken_To_Repository()
+    {
+        // Arrange: preparamos una máquina y un repositorio simulado que devuelve esa máquina.
+        var machine = Machine.Create("M001", "Test Machine", MachineType.Cnc);
+        var mockRepository = new Mock<IMachineRepository>();
+        mockRepository
+            .Setup(repo => repo.GetByIdAsync(
+                machine.Id,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(machine);
+        var useCase = new RaiseMachineAlarmUseCase(mockRepository.Object);
+        using var cts = new CancellationTokenSource();
+        // Act: pedimos al caso de uso que registre una alarma pasando un token de cancelación.
+        await useCase.ExecuteAsync(
+            machine.Id,
+            "ALM001",
+            "Test Alarm",
+            AlarmSeverity.Critical,
+            cts.Token);
+        // Assert: verificamos que el token de cancelación se haya pasado correctamente al repositorio.
+        mockRepository.Verify(
+            repo => repo.GetByIdAsync(machine.Id, cts.Token),
+            Times.Once);
+        mockRepository.Verify(
+            repo => repo.SaveAsync(machine, cts.Token),
+            Times.Once);
+
+    }
 }

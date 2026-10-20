@@ -18,7 +18,7 @@ El propósito es construir un portfolio .NET profesional y, al mismo tiempo, apr
 - `Directory.Packages.props` para gestionar versiones NuGet de forma centralizada.
 - Visual Studio 2026.
 
-Tecnologías previstas, aún no implementadas: ASP.NET Core, EF Core, SQL Server, SignalR, RabbitMQ, Redis cuando se justifique, Serilog, OpenTelemetry, Docker, GitHub Actions y Azure si aporta valor al portfolio.
+Tecnologías previstas, aún no implementadas: ASP.NET Core, persistencia efectiva con EF Core y SQL Server, SignalR, RabbitMQ, Redis cuando se justifique, Serilog, OpenTelemetry, Docker, GitHub Actions y Azure si aporta valor al portfolio. El proveedor EF Core SQL Server ya está referenciado en `ECA.Infrastructure`.
 
 ## Estructura actual del repositorio
 
@@ -114,11 +114,9 @@ Tareas:
 - Cubrir el camino exitoso y la propagación de errores de dominio.
 - Mantener el dominio libre de dependencias de infraestructura.
 
-**Estado:** en curso.
+**Estado:** completado a nivel inicial.
 
-**Implementado:** `IMachineRepository`, `ClearMachineAlarmUseCase` y el test del caso en que el repositorio devuelve `null`. Se ha confirmado que el caso de uso devuelve `false` y que no intenta guardar una máquina inexistente.
-
-**Siguiente tarea:** crear el test del camino exitoso, verificando que la alarma se limpia, se guarda la máquina y el resultado es `true`. Proponer y resolver un solo ejercicio cada vez.
+**Implementado:** `IMachineRepository`, `ClearMachineAlarmUseCase` y `RaiseMachineAlarmUseCase`. Los tests de Application cubren los caminos exitosos, máquina inexistente, errores de validación y guardado, además de la propagación del `CancellationToken`. La última ejecución de `dotnet test ECA.UnitTests/ECA.UnitTests.csproj` terminó con 68 tests correctos.
 
 **Criterios de aceptación:** Application coordina el caso de uso, el dominio aplica las reglas y los tests verifican resultados e interacciones relevantes.
 
@@ -134,7 +132,11 @@ Tareas:
 - Definir la frontera transaccional y el procesamiento de Domain Events sin pérdida de consistencia.
 - Crear tests de integración de persistencia.
 
-**Estado:** pendiente.
+**Estado:** en curso.
+
+**Implementado:** referencia al proveedor EF Core SQL Server en `ECA.Infrastructure`, con la versión gestionada desde `Directory.Packages.props`, y esqueleto de `EcaDbContext` que recibe `DbContextOptions<EcaDbContext>` y expone `DbSet<Machine>`. La compilación de `ECA.Infrastructure` y los 68 tests unitarios se ejecutaron correctamente. La persistencia todavía no está implementada.
+
+**Siguiente tarea:** configurar la conversión de `MachineId` a `Guid` para que EF Core pueda usarlo como clave persistida de `Machine`.
 
 **Criterios de aceptación:** las entidades pueden guardarse y recuperarse conservando sus identidades, estados y relaciones; las operaciones de persistencia se cubren con tests de integración.
 
